@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "y-disk"
+version = "0.1.0"
+description = "A convenient Python interface for the Yandex.Disk REST API"
+requires-python = ">=3.9"
+dependencies = [
+    "requests>=2.25",
+]
+
+[tool.setuptools]
+packages = ["y_disk"]
