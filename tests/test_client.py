@@ -47,6 +47,22 @@ def main() -> None:
         assert downloaded.read_text() == local_file.read_text()
         print("single file upload/download roundtrip ok")
 
+        # --- overwrite=False (default) still refuses to clobber -----------
+        try:
+            disk.upload_file(str(local_file), remote_path_1, make_unique=False)
+            raise AssertionError("expected FileExistsError without overwrite")
+        except FileExistsError:
+            print("overwrite=False correctly refused to clobber an existing file")
+
+        # --- overwrite=True replaces the file in place ---------------------
+        local_file.write_text("updated content\n")
+        remote_path_overwritten = disk.upload_file(str(local_file), remote_path_1, overwrite=True)
+        assert remote_path_overwritten == remote_path_1, "overwrite should keep the same path"
+        redownloaded = tmp_dir / "hello_redownloaded.txt"
+        disk.download_file(remote_path_1, str(redownloaded))
+        assert redownloaded.read_text() == "updated content\n"
+        print("overwrite=True correctly replaced the file in place")
+
         # --- folder upload/download ---------------------------------------
         local_folder = tmp_dir / "folder_src"
         (local_folder / "sub").mkdir(parents=True)

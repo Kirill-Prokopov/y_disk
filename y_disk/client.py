@@ -1,8 +1,9 @@
 """A convenient client for the Yandex.Disk REST API.
 
-By design this client never deletes or overwrites anything on the disk:
-uploads always land at a unique path (an existing file is never overwritten),
-and there is no delete/remove/move-to-trash method at all.
+By design this client never deletes anything on the disk -- there is no
+delete/remove/move-to-trash method at all. Overwriting is opt-in: uploads
+land at a unique path by default (an existing file is never overwritten
+unless you explicitly pass ``overwrite=True``).
 """
 from __future__ import annotations
 
@@ -229,25 +230,32 @@ class YandexDiskClient:
     # ------------------------------------------------------------------
     # upload / download
     # ------------------------------------------------------------------
-    def upload_file(self, local_path: str, remote_path: str, make_unique: bool = True) -> str:
+    def upload_file(
+        self, local_path: str, remote_path: str, make_unique: bool = True, overwrite: bool = False
+    ) -> str:
         """Upload a single local file.
 
-        An existing remote file is never overwritten: by default a unique
+        By default an existing remote file is never overwritten: a unique
         name is chosen automatically (``make_unique=True``); with
         ``make_unique=False`` a ``FileExistsError`` is raised instead.
-        Returns the remote path the file was actually uploaded to.
+        Pass ``overwrite=True`` to replace an existing remote file in place
+        instead -- it takes precedence over ``make_unique`` when both would
+        otherwise apply. Returns the remote path the file was actually
+        uploaded to (``remote_path`` unchanged, unless renamed by
+        ``make_unique``).
         """
         remote_path = self._normalize(remote_path)
         remote_dir = posixpath.dirname(remote_path) or "/"
         self.make_dir(remote_dir)
 
-        if make_unique:
-            remote_path = self.unique_remote_path(remote_path)
-        elif self.exists(remote_path):
-            raise FileExistsError(f"{remote_path} already exists and overwriting is not supported")
+        if not overwrite:
+            if make_unique:
+                remote_path = self.unique_remote_path(remote_path)
+            elif self.exists(remote_path):
+                raise FileExistsError(f"{remote_path} already exists and overwriting is not supported")
 
         upload_info = self._api(
-            "GET", "/resources/upload", params={"path": remote_path, "overwrite": False}
+            "GET", "/resources/upload", params={"path": remote_path, "overwrite": overwrite}
         ).json()
         with open(local_path, "rb") as f:
             resp = self._session.put(upload_info["href"], data=f, timeout=self._timeout)
@@ -270,11 +278,14 @@ class YandexDiskClient:
                     f.write(chunk)
         return local_path
 
-    def upload_folder(self, local_folder: str, remote_folder: str, make_unique: bool = True) -> str:
+    def upload_folder(
+        self, local_folder: str, remote_folder: str, make_unique: bool = True, overwrite: bool = False
+    ) -> str:
         """Recursively upload a local directory tree.
 
-        Existing remote folders are reused; existing remote files are never
-        overwritten (see :meth:`upload_file`).
+        Existing remote folders are reused; existing remote files are
+        handled per-file exactly as in :meth:`upload_file` (by default,
+        never overwritten -- pass ``overwrite=True`` to replace them).
         """
         remote_folder = self._normalize(remote_folder)
         self.make_dir(remote_folder)
@@ -285,7 +296,7 @@ class YandexDiskClient:
             for filename in files:
                 local_file = os.path.join(root, filename)
                 remote_file = posixpath.join(remote_root, filename)
-                self.upload_file(local_file, remote_file, make_unique=make_unique)
+                self.upload_file(local_file, remote_file, make_unique=make_unique, overwrite=overwrite)
         return remote_folder
 
     def download_folder(self, remote_folder: str, local_folder: str) -> str:
