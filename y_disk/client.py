@@ -21,7 +21,7 @@ LIST_PAGE_SIZE = 200
 ITEM_FIELDS = (
     "_embedded.items.name,_embedded.items.path,_embedded.items.type,"
     "_embedded.items.size,_embedded.items.mime_type,_embedded.items.md5,"
-    "_embedded.items.created,_embedded.items.modified,_embedded.total"
+    "_embedded.items.sha256,_embedded.items.created,_embedded.items.modified,_embedded.total"
 )
 
 
@@ -35,6 +35,7 @@ class DiskItem:
     size: Optional[int] = None
     mime_type: Optional[str] = None
     md5: Optional[str] = None
+    sha256: Optional[str] = None
     created: Optional[str] = None
     modified: Optional[str] = None
 
@@ -51,6 +52,7 @@ class DiskItem:
             size=data.get("size"),
             mime_type=data.get("mime_type"),
             md5=data.get("md5"),
+            sha256=data.get("sha256"),
             created=data.get("created"),
             modified=data.get("modified"),
         )
