@@ -11,11 +11,7 @@ def load_token(name: str, secrets_path: str = DEFAULT_SECRETS_PATH) -> str:
     """Return the token stored under ``name`` in the secrets file."""
     path = Path(secrets_path).expanduser()
     text = path.read_text()
-
-    try:
-        data = json.loads(text)
-    except json.JSONDecodeError:
-        data = _parse_env_style(text)
+    data = _parse_env_style(text)
 
     if name not in data:
         raise KeyError(f"No secret named {name!r} found in {path}")
@@ -28,8 +24,6 @@ def _parse_env_style(text: str) -> dict:
         line = line.strip()
         if not line or line.startswith("#"):
             continue
-        if line.startswith("export "):
-            line = line[len("export "):]
         if "=" not in line:
             continue
         key, _, value = line.partition("=")
