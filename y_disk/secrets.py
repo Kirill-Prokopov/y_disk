@@ -1,10 +1,4 @@
-"""Convenience loader for OAuth tokens kept in a local secrets file.
-
-This is only meant for local development/testing. The secrets file may be
-either a JSON object (``{"NAME": "token", ...}``) or a simple ``NAME=value``
-per-line file (like a `.env` file, `#` comments and an optional ``export``
-prefix are tolerated).
-"""
+"""Convenience loader for OAuth tokens kept in a local secrets file."""
 from __future__ import annotations
 
 import json
